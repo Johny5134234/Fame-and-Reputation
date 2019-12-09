@@ -52,7 +52,12 @@ Scriptname FameQuestScript extends Quest  conditional
 ;		If you want quests to start when a certain Fame/Reputation value has been reached you'll need to use the Story Manager.
 ;		Simply add your quest to the [ID]ReputationHandler/[ID]FameMonitor in the Script Event SM Event Node, and add a conditiion to check the global value of Fame/Reputation.
 
-
+; EXTENDING THIS FURTHER
+;	While these ideas aren't implemented with the code they should be perfectly doable with a few tweaks.
+;	 - Follower Fame and Reputation that changes as the adventure with the player.
+;	 - Regional Fame and Reputation
+;	 - Allowing the player to see their Fame and Reputation (without debug)
+;	 - More generic listeners like passing speech checks and talking to certain characters
 
 
 Actor Property PlayerRef  Auto  

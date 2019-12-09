@@ -41,7 +41,7 @@ Scriptname FameQuestScript extends Quest  conditional
 
 ;		Referencing Fame and Reputation in other scripts is easy if you add this script as a property.
 ;		Simply add {FameQuestScript Property [name] Auto} and set the property to {[ID]FameandReputationHandler}
-;		Now, you can use the global values for Fame and Reputation by using {[name].[GlobalFunction]} (e.g. fameHandler.GetFame())
+;		Now, you can use the global functions for Fame and Reputation by using {[name].[GlobalFunction]} (e.g. fameHandler.GetFame())
 
 ;		I'd recommend that you always use the functions from this script rather than modifying the global values directly.
 ;		This is because the functions in this script are set up so that they broadcast changes to either value to the Story Manager

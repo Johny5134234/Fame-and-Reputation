@@ -74,15 +74,17 @@ Keyword Property ReputationKeyword  Auto
 ; DEBUG WORK
 ;***********
 
-; requires SKSE
+; probably requires SKSE
 	Event OnInit()
 		RegisterForSingleUpdate(0.05)
 	EndEvent
 
 	Event OnUpdate()
+		; 'x'
 		if(Input.IsKeyPressed(45))
 			Debug.Notification("Reputation: " + GetReputation())
 			Debug.Notification("Fame: " + GetFame())
+		; 'v'
 		elseif(Input.IsKeyPressed(47))
 			ImproveFame(5)
 			Debug.Notification("Fame: " + GetFame())

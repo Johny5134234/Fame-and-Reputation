@@ -12,7 +12,7 @@ Scriptname FameQuestScript extends Quest  conditional
 
 ; REPUTATION:
 ;	Reputation is a measure of how well-regarded the player is. The more negative the player's Reputation is, the worse they're regarded and vice versa.
-;	While I intended Reputation to function as a measure of how the world views the player, it can easily be tweaked to be more like a Karma system.
+;	While I intended Reputation to function as a measure of how the world views the player, it can easily be tweaked to be more like a karma/morality system.
 ;	This is designed to influence NPC interactions,
 
 ; USAGE:

@@ -58,6 +58,10 @@ Scriptname FameQuestScript extends Quest  conditional
 ;	 - Regional Fame and Reputation
 ;	 - Allowing the player to see their Fame and Reputation (without debug)
 ;	 - More generic listeners like passing speech checks and talking to certain characters
+;	 - More nuanced interactions between the player and factions with faction specific reputation
+;	 - More nuanced interactions between factions and other factions with those specific reputation values
+;	 - Internal player "archetypes"
+;	 - player appearance temporarily affects reputation or fame
 
 
 Actor Property PlayerRef  Auto  

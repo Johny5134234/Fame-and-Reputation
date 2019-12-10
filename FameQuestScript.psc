@@ -239,7 +239,7 @@ Keyword Property ReputationKeyword  Auto
 		endif
 	EndEvent
 
-	; not currently working :(
+	; might disable, punishes leveling up outside of province
 	Event OnStoryIncreaseLevel(int aiNewLevel)
 		Debug.MessageBox("Registered Level")
 		ImproveFame(10)

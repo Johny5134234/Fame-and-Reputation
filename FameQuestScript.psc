@@ -161,6 +161,28 @@ int Property crimeRegion Auto
 		endif
 	EndFunction
 
+	string Function GetReputationStatus(string id)
+		if(GetReputation(id) <= -75)
+			return "vilified"
+		elseif(GetReputation(id) <= -50)
+			return "hated"
+		elseif(GetReputation(id) <= -25)
+			return "shunned"
+		elseif(GetReputation(id) <= 0)
+			return "disliked"
+		elseif(GetReputation(id) <= 25)
+			return "neutral"
+		elseif(GetReputation(id) <= 50)
+			return "accepted"
+		elseif(GetReputation(id) <= 75)
+			return "liked"
+		elseif(GetReputation(id) > 75)
+			return "idolized"
+		else
+			return "invalid id"
+		endif
+	EndFunction
+
 	int Function GetFame()
 		return pFame.GetValueInt()
 	EndFunction
@@ -332,7 +354,7 @@ int Property crimeRegion Auto
 				elseif(aiRelationshipRank == -4)
 					DamageReputation("dune", 5)
 				else
-					DamageReputation("dune", 15)
+					DamageReputation("dune", 25)
 				endif
 			endif
 

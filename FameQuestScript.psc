@@ -1,5 +1,4 @@
-Scriptname FameQuestScript extends Quest  conditional
-
+Scriptname fameHandler extends Quest  Conditional
 ;****************************
 ; FAME AND REPUTATION HANDLER
 ;****************************
@@ -23,14 +22,6 @@ Scriptname FameQuestScript extends Quest  conditional
 ;		You'll want to define all of this script's properties to forms that are specific to your province.
 ;		As a general rule, rename the BSK part of all of this .esp's forms to your province ID
 ;		Here's a list of the things you'll need to change:
-;			Properties:
-;			 - FameWorldspace = your province's worldspace
-;			 - FameLocation = your province's master location
-;			 - BSKFameandHandler = [ID]FameandReputationHandler (the renamed version of this quest)
-;			 - pFame = [ID]Fame
-;			 - pReputation = [ID]Reputation
-;			 - FrameKeyword = [ID]FrameChange
-;			 - ReputationKeyword = [ID]ReputationChange
 ;			 -
 ;			Misc.
 ;			 - BSKReputationMonitor = [ID]ReputationMonitor (found in the Script Event SM Event Node)
@@ -69,9 +60,35 @@ WorldSpace Property FameWorldspace  Auto
 Location Property FameLocation  Auto    
 Quest Property BSKFameandReputationHandler  Auto  
 GlobalVariable Property pFame  Auto  
-GlobalVariable Property pReputation  Auto  
+GlobalVariable Property pReputation  Auto     
+GlobalVariable Property DuneRep  Auto  
+GlobalVariable Property OrcrestRep  Auto   
+GlobalVariable Property RiverholdRep  Auto  
+GlobalVariable Property RimmenRep  Auto  
+GlobalVariable Property DesertBanditRep  Auto  
+GlobalVariable Property BaandariRep  Auto  
+GlobalVariable Property ZhanKhajRep  Auto  
 Keyword Property FameKeyword  Auto  
 Keyword Property ReputationKeyword  Auto  
+
+int Property crimeRegion Auto
+
+;****
+;ID'S
+;****
+
+; REGIONS:
+; key = REPUTATION TYPE = "string id", "broadcast id"
+
+;	DUNE = "dune", "1"
+; 	ORCREST = "orcrest", "2"
+;	RIVERHOLD = "riverhold", "3"
+;	RIMMEN = "rimmen", "4"
+; FACTIONS:
+;	Ma'a-di-khaj = "maadikhaj", "5"
+;	Baandari = "baandari", "6"
+;	Zhan-khaj = "zhankhaj", "7"
+
 
 
 ;***********
@@ -79,22 +96,22 @@ Keyword Property ReputationKeyword  Auto
 ;***********
 
 ; probably requires SKSE
-	Event OnInit()
-		RegisterForSingleUpdate(0.05)
-	EndEvent
+;	Event OnInit()
+;		RegisterForSingleUpdate(0.05)
+;	EndEvent
 
-	Event OnUpdate()
+;	Event OnUpdate()
 		; 'x'
-		if(Input.IsKeyPressed(45))
-			Debug.Notification("Reputation: " + GetReputation())
-			Debug.Notification("Fame: " + GetFame())
+;		if(Input.IsKeyPressed(45))
+;			Debug.Notification("Reputation: " + GetReputation())
+;			Debug.Notification("Fame: " + GetFame())
 		; 'v'
-		elseif(Input.IsKeyPressed(47))
-			ImproveFame(5)
-			Debug.Notification("Fame: " + GetFame())
-		endif
-		RegisterForSingleUpdate(0.05)
-	EndEvent
+;		elseif(Input.IsKeyPressed(47))
+;			ImproveFame(5)
+;			Debug.Notification("Fame: " + GetFame())
+;		endif
+;		RegisterForSingleUpdate(0.05)
+;	EndEvent
 	
 	
 ;******************
@@ -114,27 +131,63 @@ Keyword Property ReputationKeyword  Auto
 		SetFame(oldFameInt - amount)
 	EndFunction
 
-	Function ImproveReputation(int amount)
-		int oldReputationInt = GetReputation()
-		SetReputation(oldReputationInt + amount)
+	Function ImproveReputation(string id, int amount)
+		int oldReputationInt = GetReputation(id)
+		SetReputation(id, oldReputationInt + amount)
 	EndFunction
 
-	Function DamageReputation(int amount)
-		int oldReputationInt = GetReputation()
-		SetReputation(oldReputationInt - amount)
+	Function DamageReputation(string id, int amount)
+		int oldReputationInt = GetReputation(id)
+		SetReputation(id, oldReputationInt - amount)
 	EndFunction
 
-	int Function GetReputation()
-		return pReputation.GetValueInt()
+	int Function GetReputation(string id)
+		if(id == "dune")
+			return DuneRep.GetValueInt()
+		elseif(id == "orcrest")
+			return OrcrestRep.GetValueInt()
+		elseif(id == "riverhold")
+			return RiverholdRep.GetValueInt()
+		elseif(id == "rimmen")
+			return RimmenRep.GetValueInt()
+		elseif(id == "maadikhaj")
+			return DesertBanditRep.GetValueInt()
+		elseif(id == "baandari")
+			return BaandariRep.GetValueInt()
+		elseif(id == "zhankhaj")
+			return ZhanKhajRep.GetValueInt()
+		else 
+			return 0
+		endif
 	EndFunction
 
 	int Function GetFame()
 		return pFame.GetValueInt()
 	EndFunction
 	
-	Function SetReputation(int amount)
-		pReputation.SetValueInt(amount)
-		BroadcastReputation()
+	Function SetReputation(string id, int amount)
+		if(id == "dune")
+			DuneRep.SetValueInt(amount)
+			BroadcastReputation(id, 1)
+		elseif(id == "orcrest")
+			OrcrestRep.SetValueInt(amount)
+			BroadcastReputation(id, 2)
+		elseif(id == "riverhold")
+			RiverholdRep.SetValueInt(amount)
+			BroadcastReputation(id, 3)
+		elseif(id == "rimmen")
+			RimmenRep.SetValueInt(amount)
+			BroadcastReputation(id, 4)
+		elseif(id == "maadikhaj")
+			DesertBanditRep.SetValueInt(amount)
+			BroadcastReputation(id, 5)
+		elseif(id == "baandari")
+			BaandariRep.SetValueInt(amount)
+			BroadcastReputation(id, 6)
+		elseif(id == "zhankhaj")
+			ZhanKhajRep.SetValueInt(amount)
+			BroadcastReputation(id, 7)
+		endif
 	EndFunction
 	
 	Function SetFame(int amount)
@@ -142,17 +195,10 @@ Keyword Property ReputationKeyword  Auto
 		BroadcastFame()
 	EndFunction
 
-	bool Function IsMoral()
-		if(GetReputation() >= 0)
-			return true
-		else
-			return false
-		endif
-	EndFunction
-
 	; these are important! If you modify the global values without calling this you risk quests that read off Fame and Reputation not firing correctly.
-	Function BroadcastReputation()
-		ReputationKeyword.SendStoryEvent(aiValue1 = GetReputation())
+	; aiValue1 always stores the value being broadcast, aiValue2 stores the reputation type
+	Function BroadcastReputation(string id, int intID)
+		ReputationKeyword.SendStoryEvent(aiValue1 = GetReputation(id), aiValue2 = intID)
 	EndFunction
 
 	Function BroadcastFame()
@@ -167,90 +213,248 @@ Keyword Property ReputationKeyword  Auto
 ; feel free to tailor these events as you like.
 
 	Event OnStoryCrimeGold(ObjectReference akVictim, ObjectReference akCriminal, Form akFaction, int aiGoldAmount, int aiCrime)
-		if(akCriminal == PlayerRef)
-			if(akCriminal.GetWorldSpace() == FameWorldspace || akCriminal.GetCurrentLocation() == FameLocation)
-				; stealing
-				if(aiCrime == 0)
-					DamageReputation(2)
-				; pickpocketing
-				elseif(aiCrime == 1)
-					DamageReputation(2)
-				; trespassing
-				elseif(aiCrime == 2)
-					DamageReputation(4)
-				; assault
-				elseif(aiCrime == 3)
-					DamageReputation(10)
-				; murder
-				elseif(aiCrime == 4)
-					; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
-				endif
+		; DUNE
+		if(crimeRegion == 1)
+			; stealing
+			if(aiCrime == 0)
+				DamageReputation("dune", 2)
+			; pickpocketing
+			elseif(aiCrime == 1)
+				DamageReputation("dune", 2)
+			; trespassing
+			elseif(aiCrime == 2)
+				DamageReputation("dune", 4)
+			; assault
+			elseif(aiCrime == 3)
+				DamageReputation("dune", 10)
+			; murder
+			elseif(aiCrime == 4)
+				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
 			endif
 		endif
+
+		; ORCREST
+		if(crimeRegion == 2)
+			; stealing
+			if(aiCrime == 0)
+				DamageReputation("orcrest", 2)
+			; pickpocketing
+			elseif(aiCrime == 1)
+				DamageReputation("orcrest", 2)
+			; trespassing
+			elseif(aiCrime == 2)
+				DamageReputation("orcrest", 4)
+			; assault
+			elseif(aiCrime == 3)
+				DamageReputation("orcrest", 10)
+			; murder
+			elseif(aiCrime == 4)
+				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
+			endif
+		endif
+
+		; RIVERHOLD
+		if(crimeRegion == 3)
+			; stealing
+			if(aiCrime == 0)
+				DamageReputation("riverhold", 2)
+			; pickpocketing
+			elseif(aiCrime == 1)
+				DamageReputation("riverhold", 2)
+			; trespassing
+			elseif(aiCrime == 2)
+				DamageReputation("riverhold", 4)
+			; assault
+			elseif(aiCrime == 3)
+				DamageReputation("riverhold", 10)
+			; murder
+			elseif(aiCrime == 4)
+				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
+			endif
+		endif
+
+		; RIMMEN
+		if(crimeRegion == 4)
+			; stealing
+			if(aiCrime == 0)
+				DamageReputation("rimmen", 2)
+			; pickpocketing
+			elseif(aiCrime == 1)
+				DamageReputation("rimmen", 2)
+			; trespassing
+			elseif(aiCrime == 2)
+				DamageReputation("rimmen", 4)
+			; assault
+			elseif(aiCrime == 3)
+				DamageReputation("rimmen", 10)
+			; murder
+			elseif(aiCrime == 4)
+				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
+			endif
+		endif
+
+		BSKFameandReputationHandler.SetStage(0)
+		crimeRegion = 0
 	EndEvent
 
 	Event OnStoryKillActor(ObjectReference akVictim, ObjectReference akKiller, Location akLocation, int aiCrimeStatus, int aiRelationshipRank)
+		
 		; checks to see if it's a crime (0: victim doesn't have a crime faction, 1: crime hasn't been reported, 2: crime has been reported)
-		if(akKiller == PlayerRef)
-			if(akKiller.GetWorldSpace() == FameWorldspace || akKiller.GetCurrentLocation() == FameLocation)
-				if(aiCrimeStatus == 2) ; change to (aiCrimeStatus != 0) for Karma system
-					; killed Lover
-					if(aiRelationshipRank == 4)
-						DamageReputation(35)
-					; killed Ally
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(30)
-					; killed Confidant
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(25)
-					; killed Friend
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(20)
-					; killed Acquaintance
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(15)
-					; killed Rival
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(10)
-					; killed Foe
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(8)
-					; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(6)
-					; killed Archnemesis
-					elseif(aiRelationshipRank == 4)
-						DamageReputation(5)
-					else
-						DamageReputation(15)
-					endif
-				; adding fame for killing enemies that are at least 5 levels higher than the player
-				elseif(aiCrimeStatus == 0)
-					
-					Actor actorVictim = akVictim as actor
-					Actor actorKiller = akKiller as actor
+		if(aiCrimeStatus == 2) ; change to (aiCrimeStatus != 0) for Karma system
 
-					if(actorVictim.GetLevel() > actorKiller.GetLevel() + 5)
-						; the amount of fame added is scaled to the amount of levels higher the enemy is
-						ImproveFame(((actorVictim.GetLevel() / actorKiller.GetLevel()) * 10) as int)
-					endif
+			; DUNE
+			if(crimeRegion == 1)
+				; killed Lover
+				if(aiRelationshipRank == 4)
+					DamageReputation("dune", 35)
+				; killed Ally
+				elseif(aiRelationshipRank == 3)
+					DamageReputation("dune", 30)
+				; killed Confidant
+				elseif(aiRelationshipRank == 2)
+					DamageReputation("dune", 25)
+				; killed Friend
+				elseif(aiRelationshipRank == 1)
+					DamageReputation("dune", 20)
+				; killed Acquaintance
+				elseif(aiRelationshipRank == 0)
+					DamageReputation("dune", 15)
+				; killed Rival
+				elseif(aiRelationshipRank == -1)
+					DamageReputation("dune", 10)
+				; killed Foe
+				elseif(aiRelationshipRank == -2)
+					DamageReputation("dune", 8)
+				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
+				elseif(aiRelationshipRank == -3)
+					DamageReputation("dune", 6)
+				; killed Archnemesis
+				elseif(aiRelationshipRank == -4)
+					DamageReputation("dune", 5)
+				else
+					DamageReputation("dune", 15)
 				endif
+			endif
+
+			; ORCREST
+			if(crimeRegion == 2)
+				; killed Lover
+				if(aiRelationshipRank == 4)
+					DamageReputation("orcrest", 35)
+				; killed Ally
+				elseif(aiRelationshipRank == 3)
+					DamageReputation("orcrest", 30)
+				; killed Confidant
+				elseif(aiRelationshipRank == 2)
+					DamageReputation("orcrest", 25)
+				; killed Friend
+				elseif(aiRelationshipRank == 1)
+					DamageReputation("orcrest", 20)
+				; killed Acquaintance
+				elseif(aiRelationshipRank == 0)
+					DamageReputation("orcrest", 15)
+				; killed Rival
+				elseif(aiRelationshipRank == -1)
+					DamageReputation("orcrest", 10)
+				; killed Foe
+				elseif(aiRelationshipRank == -2)
+					DamageReputation("orcrest", 8)
+				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
+				elseif(aiRelationshipRank == -3)
+					DamageReputation("orcrest", 6)
+				; killed Archnemesis
+				elseif(aiRelationshipRank == -4)
+					DamageReputation("orcrest", 5)
+				else
+					DamageReputation("orcrest", 15)
+				endif
+			endif
+
+			; RIVERHOLD
+			if(crimeRegion == 3)
+				; killed Lover
+				if(aiRelationshipRank == 4)
+					DamageReputation("riverhold", 35)
+				; killed Ally
+				elseif(aiRelationshipRank == 3)
+					DamageReputation("riverhold", 30)
+				; killed Confidant
+				elseif(aiRelationshipRank == 2)
+					DamageReputation("riverhold", 25)
+				; killed Friend
+				elseif(aiRelationshipRank == 1)
+					DamageReputation("riverhold", 20)
+				; killed Acquaintance
+				elseif(aiRelationshipRank == 0)
+					DamageReputation("riverhold", 15)
+				; killed Rival
+				elseif(aiRelationshipRank == -1)
+					DamageReputation("riverhold", 10)
+				; killed Foe
+				elseif(aiRelationshipRank == -2)
+					DamageReputation("riverhold", 8)
+				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
+				elseif(aiRelationshipRank == -3)
+					DamageReputation("riverhold", 6)
+				; killed Archnemesis
+				elseif(aiRelationshipRank == -4)
+					DamageReputation("riverhold", 5)
+				else
+					DamageReputation("riverhold", 15)
+				endif
+			endif
+
+			; RIMMEN
+			if(crimeRegion == 4)
+				; killed Lover
+				if(aiRelationshipRank == 4)
+					DamageReputation("rimmen", 35)
+				; killed Ally
+				elseif(aiRelationshipRank == 3)
+					DamageReputation("rimmen", 30)
+				; killed Confidant
+				elseif(aiRelationshipRank == 2)
+					DamageReputation("rimmen", 25)
+				; killed Friend
+				elseif(aiRelationshipRank == 1)
+					DamageReputation("rimmen", 20)
+				; killed Acquaintance
+				elseif(aiRelationshipRank == 0)
+					DamageReputation("rimmen", 15)
+				; killed Rival
+				elseif(aiRelationshipRank == -1)
+					DamageReputation("rimmen", 10)
+				; killed Foe
+				elseif(aiRelationshipRank == -2)
+					DamageReputation("rimmen", 8)
+				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
+				elseif(aiRelationshipRank == -3)
+					DamageReputation("rimmen", 6)
+				; killed Archnemesis
+				elseif(aiRelationshipRank == -4)
+					DamageReputation("rimmen", 5)
+				else
+					DamageReputation("rimmen", 15)
+				endif
+			endif
+
+			BSKFameandReputationHandler.SetStage(0)
+			crimeRegion = 0
+		endif
+
+		; adding fame for killing enemies that are at least 5 levels higher than the player
+		if(aiCrimeStatus == 0)
+
+			Actor actorVictim = akVictim as actor
+			Actor actorKiller = akKiller as actor
+
+			if(actorVictim.GetLevel() > actorKiller.GetLevel() + 5)
+				; the amount of fame added is scaled to the amount of levels higher the enemy is
+				ImproveFame(((actorVictim.GetLevel() / actorKiller.GetLevel()) * 10) as int)
 			endif
 		endif
 	EndEvent
 
-	; might disable, punishes leveling up outside of province
-	Event OnStoryIncreaseLevel(int aiNewLevel)
-		Debug.MessageBox("Registered Level")
-		ImproveFame(10)
-	EndEvent
 
-
-
-
-
-
-
- 
 
 

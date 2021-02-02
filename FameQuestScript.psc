@@ -1,9 +1,10 @@
-Scriptname fameHandler extends Quest  Conditional
+Scriptname ELSSysRepHandler extends Quest
+{A script containing various functions for handling reputation or fame values}
 ;****************************
 ; FAME AND REPUTATION HANDLER
 ;****************************
 
-; This is the main script that manages both Fame and Reputation. Scripts and quests that implement this system
+; This is the main script that manages both Fame and Reputation. Scripts and quests that implement this system will need to utilise the global functions contained within the script.
 
 ; FAME:
 ;	Fame is a measure of how well known the player is in a province. It is always positive and should not be damage, only improved.
@@ -31,7 +32,7 @@ Scriptname fameHandler extends Quest  Conditional
 ;	GETTING VALUES IN OTHER SCRIPTS:
 
 ;		Referencing Fame and Reputation in other scripts is easy if you add this script as a property.
-;		Simply add {FameQuestScript Property [name] Auto} and set the property to {[ID]FameandReputationHandler}
+;		Simply add {ELSSysRepHandler Property [name] Auto} and set the property to {[ID]FameandReputationHandler}
 ;		Now, you can use the global functions for Fame and Reputation by using {[name].[GlobalFunction]} (e.g. fameHandler.GetFame())
 
 ;		I'd recommend that you always use the functions from this script rather than modifying the global values directly.
@@ -54,429 +55,215 @@ Scriptname fameHandler extends Quest  Conditional
 ;	 - Internal player "archetypes"
 ;	 - player appearance temporarily affects reputation or fame
 
-
-Actor Property PlayerRef  Auto  
-WorldSpace Property FameWorldspace  Auto
-Location Property FameLocation  Auto    
-Quest Property BSKFameandReputationHandler  Auto  
-GlobalVariable Property pFame  Auto  
-GlobalVariable Property pReputation  Auto     
-GlobalVariable Property DuneRep  Auto  
-GlobalVariable Property OrcrestRep  Auto   
-GlobalVariable Property RiverholdRep  Auto  
-GlobalVariable Property RimmenRep  Auto  
-GlobalVariable Property DesertBanditRep  Auto  
-GlobalVariable Property BaandariRep  Auto  
-GlobalVariable Property ZhanKhajRep  Auto  
-Keyword Property FameKeyword  Auto  
-Keyword Property ReputationKeyword  Auto  
-
-int Property crimeRegion Auto
-
-;****
-;ID'S
-;****
-
-; REGIONS:
-; key = REPUTATION TYPE = "string id", "broadcast id"
-
-;	DUNE = "dune", "1"
-; 	ORCREST = "orcrest", "2"
-;	RIVERHOLD = "riverhold", "3"
-;	RIMMEN = "rimmen", "4"
-; FACTIONS:
-;	Ma'a-di-khaj = "maadikhaj", "5"
-;	Baandari = "baandari", "6"
-;	Zhan-khaj = "zhankhaj", "7"
-
-
+GlobalVariable Property ELSRHKhajRep Auto
+GlobalVariable Property ELSRHImpRep Auto
+GlobalVariable Property ELSFame Auto
+Keyword Property FameKeyword Auto
+Keyword Property ReputationKeyword Auto
 
 ;***********
 ; DEBUG WORK
 ;***********
 
 ; probably requires SKSE
-;	Event OnInit()
-;		RegisterForSingleUpdate(0.05)
-;	EndEvent
+	Event OnInit()
+		RegisterForSingleUpdate(0.05)
+	EndEvent
 
-;	Event OnUpdate()
+	Event OnUpdate()
 		; 'x'
-;		if(Input.IsKeyPressed(45))
-;			Debug.Notification("Reputation: " + GetReputation())
-;			Debug.Notification("Fame: " + GetFame())
+		if(Input.IsKeyPressed(45))
+			Debug.Notification("Riverhold Imperial Reputation: " + GetReputation("rhimp"))
+			Debug.Notification("Fame: " + GetFame())
 		; 'v'
-;		elseif(Input.IsKeyPressed(47))
-;			ImproveFame(5)
-;			Debug.Notification("Fame: " + GetFame())
-;		endif
-;		RegisterForSingleUpdate(0.05)
-;	EndEvent
+		elseif(Input.IsKeyPressed(47))
+			ModReputation("rhimp", 5)
+			Debug.Notification("Riverhold Imperial Reputation: " + GetReputation("rhimp"))
+		endif
+		RegisterForSingleUpdate(0.05)
+	EndEvent
 	
+;*****
+;IDs
+;*****
+
+;KEY: REPUTATION TYPE = "string id", "broadcast id"
+;
+
+; CITIES:
+;	Riverhold Khajiit = "rhkahj", "1"
+;	Riverhold Imperials = "rhimp", "2"
 	
 ;******************
 ; GLOBAL FUNCTIONS
 ;******************
 
-; these are the functions you should call in other quests and scripts to properly hook into the system.
+; these are the functions you should call in other quests and scripts to properly hook into the system
 
-	Function ImproveFame(int amount)
-		int oldFameInt = GetFame()
-		SetFame(oldFameInt + amount)
+	Function ModFame(int amount, bool blockMessage = false)
+		int oldFame = GetFame()
+		SetFame(oldFame + amount, blockMessage)
 	EndFunction
-
-	; shouldn't really be used as fame always increases
-	Function DamageFame(int amount)
-		int oldFameInt = GetFame()
-		SetFame(oldFameInt - amount)
-	EndFunction
-
-	Function ImproveReputation(string id, int amount)
-		int oldReputationInt = GetReputation(id)
-		SetReputation(id, oldReputationInt + amount)
-	EndFunction
-
-	Function DamageReputation(string id, int amount)
-		int oldReputationInt = GetReputation(id)
-		SetReputation(id, oldReputationInt - amount)
-	EndFunction
-
-	int Function GetReputation(string id)
-		if(id == "dune")
-			return DuneRep.GetValueInt()
-		elseif(id == "orcrest")
-			return OrcrestRep.GetValueInt()
-		elseif(id == "riverhold")
-			return RiverholdRep.GetValueInt()
-		elseif(id == "rimmen")
-			return RimmenRep.GetValueInt()
-		elseif(id == "maadikhaj")
-			return DesertBanditRep.GetValueInt()
-		elseif(id == "baandari")
-			return BaandariRep.GetValueInt()
-		elseif(id == "zhankhaj")
-			return ZhanKhajRep.GetValueInt()
-		else 
+	
+	; fame has no limit, can never be negative
+	int Function SetFame(int amount, bool blockMessage = false)
+		string oldFameStatus = GetFameStatus()
+	
+		if(amount < 0)
+			ELSFame.SetValueInt(0)
+			BroadcastFame()
+			if(oldFameStatus != GetFameStatus() && blockMessage == false)
+				messageFame()
+			endif
 			return 0
-		endif
-	EndFunction
-
-	string Function GetReputationStatus(string id)
-		if(GetReputation(id) <= -75)
-			return "vilified"
-		elseif(GetReputation(id) <= -50)
-			return "hated"
-		elseif(GetReputation(id) <= -25)
-			return "shunned"
-		elseif(GetReputation(id) <= 0)
-			return "disliked"
-		elseif(GetReputation(id) <= 25)
-			return "neutral"
-		elseif(GetReputation(id) <= 50)
-			return "accepted"
-		elseif(GetReputation(id) <= 75)
-			return "liked"
-		elseif(GetReputation(id) > 75)
-			return "idolized"
 		else
-			return "invalid id"
+			ELSFame.SetValueInt(amount)
+			BroadcastFame()
+			if(oldFameStatus != GetFameStatus() && blockMessage == false)
+				messageFame()
+			endif
+			return amount
 		endif
+		
+		
 	EndFunction
-
+	
 	int Function GetFame()
-		return pFame.GetValueInt()
+		return ELSFame.GetValueInt()
 	EndFunction
 	
-	Function SetReputation(string id, int amount)
-		if(id == "dune")
-			DuneRep.SetValueInt(amount)
-			BroadcastReputation(id, 1)
-		elseif(id == "orcrest")
-			OrcrestRep.SetValueInt(amount)
-			BroadcastReputation(id, 2)
-		elseif(id == "riverhold")
-			RiverholdRep.SetValueInt(amount)
-			BroadcastReputation(id, 3)
-		elseif(id == "rimmen")
-			RimmenRep.SetValueInt(amount)
-			BroadcastReputation(id, 4)
-		elseif(id == "maadikhaj")
-			DesertBanditRep.SetValueInt(amount)
-			BroadcastReputation(id, 5)
-		elseif(id == "baandari")
-			BaandariRep.SetValueInt(amount)
-			BroadcastReputation(id, 6)
-		elseif(id == "zhankhaj")
-			ZhanKhajRep.SetValueInt(amount)
-			BroadcastReputation(id, 7)
+	
+	Function ModReputation(string id, int amount, bool blockMessage = false)
+		int oldRep = GetReputation(id)
+		SetReputation(id, oldRep + amount, blockMessage)
+	EndFunction
+	
+	int Function GetReputation(string id)
+		if(id == "rhkhaj" || id == "1")
+			return ELSRHKhajRep.GetValueInt()
+		elseif(id == "rhimp" || id == "2")
+			return ELSRHImpRep.GetValueInt()
+		else
+			return 0
+			debug.Trace("ELS: Reputation id not found", 2)
 		endif
 	EndFunction
 	
-	Function SetFame(int amount)
-		pFame.SetValueInt(amount)
-		BroadcastFame()
+	; reputation is clamped between -100 and 100
+	int Function SetReputation(string id, int amount, bool blockMessage = false)
+		string oldRepStatus = GetReputationStatus(id)
+		int amountReal = amount
+		
+		if(amount < -100)
+			amountReal = -100
+		elseif(amount > 100)
+			amountReal = 100
+		endif
+	
+		if(id == "rhkhaj" || id == "1")
+			ELSRHKhajRep.SetValueInt(amountReal)
+		elseif(id == "rhimp" || id == "2")
+			ELSRHImpRep.SetValueInt(amountReal)
+		else
+			debug.Trace("ELS: Reputation id not found", 2)
+		endif
+		
+		if(oldRepStatus != GetReputationStatus(id) && blockMessage == false)
+			messageReputation(id)
+		endif
+		
+		BroadcastReputation(id)
+		return amount
 	EndFunction
-
+	
+	string Function GetFameStatus()
+		int fame = GetFame()
+		
+		if(fame <= 25)
+			return "vagrant"
+		elseif(fame <= 50)
+			return "traveller"
+		elseif(fame <= 75)
+			return "adventurer"
+		elseif(fame <= 100)
+			return "hero"
+		elseif(fame <= 125)
+			return "savior"
+		elseif(fame <= 150)
+			return "legend"
+		elseif(fame <= 175)
+			return "mythic"
+		elseif(fame <= 200)
+			return "god-like"
+		endif
+	EndFunction
+	
+	string Function GetReputationStatus(string id)
+		int rep = GetReputation(id)
+		
+		if(rep <= -75)
+			return "villified"
+		elseif(rep <= -50)
+			return "hated"
+		elseif(rep <= -25)
+			return "shunned"
+		elseif(rep <= -5)
+			return "dislkied"
+		elseif(rep <= 5 && rep >= -4)
+			return "unknown"
+		elseif(rep <= 25)
+			return "liked"
+		elseif(rep <= 50)
+			return "accepted"
+		elseif(rep <= 75)
+			return "loved"
+		elseif(rep > 75)
+			return "idolized"
+		endif
+	EndFunction
+	
+	Function messageFame()
+		Debug.MessageBox("You are now a " + GetFameStatus() + " to the people of Elsweyr.")
+	EndFunction
+	
+	Function messageReputation(string id)
+		Debug.MessageBox("People have taken note of your actions...\n\n" + "You are now " + GetReputationStatus(id) + " by " + LocalizeReputationFaction(id) + ".")
+	EndFunction
+	
 	; these are important! If you modify the global values without calling this you risk quests that read off Fame and Reputation not firing correctly.
 	; aiValue1 always stores the value being broadcast, aiValue2 stores the reputation type
-	Function BroadcastReputation(string id, int intID)
-		ReputationKeyword.SendStoryEvent(aiValue1 = GetReputation(id), aiValue2 = intID)
-	EndFunction
-
 	Function BroadcastFame()
 		FameKeyword.SendStoryEvent(aiValue1 = GetFame())
 	EndFunction
-
-;*******************
-; GENERIC LISTENERS
-;*******************
-
-; these listen out for generic events such as murder, stealing, etc. and modify reputation and fame accordingly.
-; feel free to tailor these events as you like.
-
-	Event OnStoryCrimeGold(ObjectReference akVictim, ObjectReference akCriminal, Form akFaction, int aiGoldAmount, int aiCrime)
-		; DUNE
-		if(crimeRegion == 1)
-			; stealing
-			if(aiCrime == 0)
-				DamageReputation("dune", 2)
-			; pickpocketing
-			elseif(aiCrime == 1)
-				DamageReputation("dune", 2)
-			; trespassing
-			elseif(aiCrime == 2)
-				DamageReputation("dune", 4)
-			; assault
-			elseif(aiCrime == 3)
-				DamageReputation("dune", 10)
-			; murder
-			elseif(aiCrime == 4)
-				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
-			endif
+	
+	Function BroadcastReputation(string id)
+		ReputationKeyword.SendStoryEvent(aiValue1 = GetReputation(id), aiValue2 = StringIDToInt(id))
+	EndFunction
+	
+	string Function LocalizeReputationFaction(string id)
+		if(id == "rhkhaj" || id == "1")
+			return "the Khajiit of Riverhold"
+		elseif(id == "rhimp" || id == "2")
+			return "the Imperials of Riverhold"
 		endif
-
-		; ORCREST
-		if(crimeRegion == 2)
-			; stealing
-			if(aiCrime == 0)
-				DamageReputation("orcrest", 2)
-			; pickpocketing
-			elseif(aiCrime == 1)
-				DamageReputation("orcrest", 2)
-			; trespassing
-			elseif(aiCrime == 2)
-				DamageReputation("orcrest", 4)
-			; assault
-			elseif(aiCrime == 3)
-				DamageReputation("orcrest", 10)
-			; murder
-			elseif(aiCrime == 4)
-				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
-			endif
+	EndFunction
+	
+	int Function StringIDToInt(string id)
+		if(id == "rhkhaj")
+			return 1
+		elseif(id == "rhimp")
+			return 2
+		else
+			return 0
 		endif
-
-		; RIVERHOLD
-		if(crimeRegion == 3)
-			; stealing
-			if(aiCrime == 0)
-				DamageReputation("riverhold", 2)
-			; pickpocketing
-			elseif(aiCrime == 1)
-				DamageReputation("riverhold", 2)
-			; trespassing
-			elseif(aiCrime == 2)
-				DamageReputation("riverhold", 4)
-			; assault
-			elseif(aiCrime == 3)
-				DamageReputation("riverhold", 10)
-			; murder
-			elseif(aiCrime == 4)
-				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
-			endif
+	EndFunction
+	
+	string Function IntIDToString(int id)
+		if(id == 1)
+			return "rhkhaj"
+		elseif(id == 2)
+			return "rhimp"
+		else
+			return "null"
 		endif
-
-		; RIMMEN
-		if(crimeRegion == 4)
-			; stealing
-			if(aiCrime == 0)
-				DamageReputation("rimmen", 2)
-			; pickpocketing
-			elseif(aiCrime == 1)
-				DamageReputation("rimmen", 2)
-			; trespassing
-			elseif(aiCrime == 2)
-				DamageReputation("rimmen", 4)
-			; assault
-			elseif(aiCrime == 3)
-				DamageReputation("rimmen", 10)
-			; murder
-			elseif(aiCrime == 4)
-				; I prefer to handle murder in the OnStoryKillActor function as it provides more detail.
-			endif
-		endif
-
-		BSKFameandReputationHandler.SetStage(0)
-		crimeRegion = 0
-	EndEvent
-
-	Event OnStoryKillActor(ObjectReference akVictim, ObjectReference akKiller, Location akLocation, int aiCrimeStatus, int aiRelationshipRank)
-		
-		; checks to see if it's a crime (0: victim doesn't have a crime faction, 1: crime hasn't been reported, 2: crime has been reported)
-		if(aiCrimeStatus == 2) ; change to (aiCrimeStatus != 0) for Karma system
-
-			; DUNE
-			if(crimeRegion == 1)
-				; killed Lover
-				if(aiRelationshipRank == 4)
-					DamageReputation("dune", 35)
-				; killed Ally
-				elseif(aiRelationshipRank == 3)
-					DamageReputation("dune", 30)
-				; killed Confidant
-				elseif(aiRelationshipRank == 2)
-					DamageReputation("dune", 25)
-				; killed Friend
-				elseif(aiRelationshipRank == 1)
-					DamageReputation("dune", 20)
-				; killed Acquaintance
-				elseif(aiRelationshipRank == 0)
-					DamageReputation("dune", 15)
-				; killed Rival
-				elseif(aiRelationshipRank == -1)
-					DamageReputation("dune", 10)
-				; killed Foe
-				elseif(aiRelationshipRank == -2)
-					DamageReputation("dune", 8)
-				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
-				elseif(aiRelationshipRank == -3)
-					DamageReputation("dune", 6)
-				; killed Archnemesis
-				elseif(aiRelationshipRank == -4)
-					DamageReputation("dune", 5)
-				else
-					DamageReputation("dune", 25)
-				endif
-			endif
-
-			; ORCREST
-			if(crimeRegion == 2)
-				; killed Lover
-				if(aiRelationshipRank == 4)
-					DamageReputation("orcrest", 35)
-				; killed Ally
-				elseif(aiRelationshipRank == 3)
-					DamageReputation("orcrest", 30)
-				; killed Confidant
-				elseif(aiRelationshipRank == 2)
-					DamageReputation("orcrest", 25)
-				; killed Friend
-				elseif(aiRelationshipRank == 1)
-					DamageReputation("orcrest", 20)
-				; killed Acquaintance
-				elseif(aiRelationshipRank == 0)
-					DamageReputation("orcrest", 15)
-				; killed Rival
-				elseif(aiRelationshipRank == -1)
-					DamageReputation("orcrest", 10)
-				; killed Foe
-				elseif(aiRelationshipRank == -2)
-					DamageReputation("orcrest", 8)
-				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
-				elseif(aiRelationshipRank == -3)
-					DamageReputation("orcrest", 6)
-				; killed Archnemesis
-				elseif(aiRelationshipRank == -4)
-					DamageReputation("orcrest", 5)
-				else
-					DamageReputation("orcrest", 15)
-				endif
-			endif
-
-			; RIVERHOLD
-			if(crimeRegion == 3)
-				; killed Lover
-				if(aiRelationshipRank == 4)
-					DamageReputation("riverhold", 35)
-				; killed Ally
-				elseif(aiRelationshipRank == 3)
-					DamageReputation("riverhold", 30)
-				; killed Confidant
-				elseif(aiRelationshipRank == 2)
-					DamageReputation("riverhold", 25)
-				; killed Friend
-				elseif(aiRelationshipRank == 1)
-					DamageReputation("riverhold", 20)
-				; killed Acquaintance
-				elseif(aiRelationshipRank == 0)
-					DamageReputation("riverhold", 15)
-				; killed Rival
-				elseif(aiRelationshipRank == -1)
-					DamageReputation("riverhold", 10)
-				; killed Foe
-				elseif(aiRelationshipRank == -2)
-					DamageReputation("riverhold", 8)
-				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
-				elseif(aiRelationshipRank == -3)
-					DamageReputation("riverhold", 6)
-				; killed Archnemesis
-				elseif(aiRelationshipRank == -4)
-					DamageReputation("riverhold", 5)
-				else
-					DamageReputation("riverhold", 15)
-				endif
-			endif
-
-			; RIMMEN
-			if(crimeRegion == 4)
-				; killed Lover
-				if(aiRelationshipRank == 4)
-					DamageReputation("rimmen", 35)
-				; killed Ally
-				elseif(aiRelationshipRank == 3)
-					DamageReputation("rimmen", 30)
-				; killed Confidant
-				elseif(aiRelationshipRank == 2)
-					DamageReputation("rimmen", 25)
-				; killed Friend
-				elseif(aiRelationshipRank == 1)
-					DamageReputation("rimmen", 20)
-				; killed Acquaintance
-				elseif(aiRelationshipRank == 0)
-					DamageReputation("rimmen", 15)
-				; killed Rival
-				elseif(aiRelationshipRank == -1)
-					DamageReputation("rimmen", 10)
-				; killed Foe
-				elseif(aiRelationshipRank == -2)
-					DamageReputation("rimmen", 8)
-				; killed Enemy (this doesn't mean an actual hostile enemy, just an NPC who's relationship with the player is as an enemy)
-				elseif(aiRelationshipRank == -3)
-					DamageReputation("rimmen", 6)
-				; killed Archnemesis
-				elseif(aiRelationshipRank == -4)
-					DamageReputation("rimmen", 5)
-				else
-					DamageReputation("rimmen", 15)
-				endif
-			endif
-
-			BSKFameandReputationHandler.SetStage(0)
-			crimeRegion = 0
-		endif
-
-		; adding fame for killing enemies that are at least 5 levels higher than the player
-		if(aiCrimeStatus == 0)
-
-			Actor actorVictim = akVictim as actor
-			Actor actorKiller = akKiller as actor
-
-			if(actorVictim.GetLevel() > actorKiller.GetLevel() + 5)
-				; the amount of fame added is scaled to the amount of levels higher the enemy is
-				ImproveFame(((actorVictim.GetLevel() / actorKiller.GetLevel()) * 10) as int)
-			endif
-		endif
-	EndEvent
-
-
-
-
+	EndFunction
